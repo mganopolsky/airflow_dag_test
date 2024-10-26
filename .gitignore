@@ -1,0 +1,6 @@
+.env
+airflow/dags/__pycache__
+env
+__pycache__/
+*.py[cod]
+.DS_Store
