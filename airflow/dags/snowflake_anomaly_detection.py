@@ -28,6 +28,10 @@ def get_airflow_var(var_name, default_value=None):
 # Access environment variables and Airflow variables with defaults
 try:
     snowflake_connection_id = os.getenv('snowflake_connection_id', 'snowflake_default')
+    jira_token = os.getenv('jira_api_key')
+    jira_url = os.getenv('jira_url')
+    jira_project_key = os.getenv('jira_project_key')
+    jira_user = os.getenv('jira_id')
     snowflake_table_name = get_airflow_var('snowflake_table_name')
     snowflake_last_update_column = get_airflow_var('snowflake_last_update_column', 'updated_at')
     date_range_start = get_airflow_var('date_range_start', '2024-01-01')
@@ -44,6 +48,45 @@ except Exception as e:
     is_dag_enabled = False
 else:
     is_dag_enabled = True
+
+def create_jira_task(error_summary:str, issue_type: str='task'):
+    
+    # Jira API endpoint for creating an issue    
+    url = f"{jira_url}/rest/api/3/issue"
+
+    # Payload with issue details
+    payload = {
+        "fields": {
+            "project": {
+                "key": project_key  # Your project key in Jira, e.g., "PROJ"
+            },
+            "summary": error_summary,
+            "description": error_summary,
+            "issuetype": {
+                "name": issue_type  # Issue type, like "Task" or "Bug"
+            }
+        }
+    }
+
+    # Headers for the request
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    # Make the POST request to create the Jira issue
+    response = requests.post(
+        url,
+        headers=headers,
+        auth=HTTPBasicAuth(jira_user, jira_token),
+        data=json.dumps(payload)
+    )
+
+    # Check the response status
+    if response.status_code == 201:
+        print("Task created successfully in Jira.")
+        print("Jira Task URL:", response.json().get("self"))
+    else:
+        print(f"Failed to create Jira task. Status code: {response.status_code}, Response: {response.text}")
 
 # Function to log success
 def log_success_message():
@@ -234,6 +277,14 @@ with DAG(
         trigger_rule=TriggerRule.ONE_FAILED
     )
 
+    # Failure task
+    create_jira_item_task = PythonOperator(
+        task_id='create_jira_item_task',
+        python_callable=create_jira_task,
+        op_kwargs={'error_summary': '❌ Some data quality checks failed. Check the logs for details.'},
+        trigger_rule=TriggerRule.ONE_FAILED
+    )
+
     # Set up the task dependencies
     fetch_data_task >> [
         test_null_values_task,
@@ -243,4 +294,4 @@ with DAG(
     ] >> check_results_task
 
     # Branching logic for success/failure
-    check_results_task >> [log_success_task, send_failure_message_task]
+    check_results_task >> [log_success_task, send_failure_message_task, create_jira_item_task]

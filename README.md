@@ -14,23 +14,29 @@ This project sets up a flow with Apache airflow in Python. Airflow set up on a l
 8. The `login/pwd` for the local version of the servier are `admin/admin'
 9. Anomaly tests - a list of all anomaly tests is shown in its own section
 10. There will not be any alerts if all tests pass successfully. ** We will only alert on failure to reduce noise **
+11. Project env variables should be stored in a `.env` file in the root folder; a template file is included with `.env_template`
   
 ## Data Quality Checks
 This project includes the following data quality checks:
 
-	1.	`Null Values`: Flags rows with missing or null values.
-	2.	`Outliers`: Detects outliers using Z-scores for all numeric columns.
-	3.	`Value Range Check`: Flags values outside pre-defined acceptable ranges (e.g., temperature outside -50 to 50 degrees).
-	4.	`Duplicate Rows`: Detects any duplicate rows in the dataset.
-	5.	`Missing Datetime Intervals`: Detects missing data points for time-series data.
+1.	`Null Values`: Flags rows with missing or null values.
+2.	`Outliers`: Detects outliers using Z-scores for all numeric columns.
+3.	`Value Range Check`: Flags values outside pre-defined acceptable ranges (e.g., temperature outside -50 to 50 degrees).
+4.	`Duplicate Rows`: Detects any duplicate rows in the dataset.
+5.	`Missing Datetime Intervals`: Detects missing data points for time-series data.
 
   
 ## Alerts/ Nofications
 The code includes alerts:
-* notifications through slack webhooks.
-  * Airflow Variable will have a value for `slack_webhook_url` key
-  * NOTE: this is an easier and more simplistic way of setting up Slack notifications, but perhaps not the safest. With more time I would implement usage w/`WebClient` from the `Slack SDK`
-* sets up a ticket in ??? JIRA? '
+* If all tests pass, a success message will be logged **only**, but no alerts will be sent.
+  * **ERROR** Notifications will be sent through slack webhook.
+    * Airflow Variable will have a value for `slack_webhook_url` key
+    * NOTE: this is an easier and more simplistic way of setting up Slack notifications, but perhaps not the safest. With more time I would implement usage w/`WebClient` from the `Slack SDK`
+  * A Jira Task ticket is set in JIRA though webhooks, as well. The following env variables are needed (please see the `.env_template` file for an example)
+    * jira_api_key 
+    * jira_url
+    * jira_project_key
+    * jira_id
   
 
 ## Installation
@@ -46,6 +52,11 @@ airflow db init
 
 # create airflow user
 airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com
+
+# if you haven't already, copy over the template file
+cp -n .env_template .env
+
+# populate the .env variables as needed
 
 #start the airflow webserver
 airflow webserver --port 8080
