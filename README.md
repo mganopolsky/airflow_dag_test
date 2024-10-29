@@ -65,4 +65,12 @@ airflow webserver --port 8080
 airflow scheduler
 
 ```
+## Airflow Runs
+The final project is set up with variables in the Airflow Environment as such:
+[/Users/marinaganopolsky/Documents/code/airflow_dag_test/images/airflow_variables.png]
 
+The when tasks fail, you can see them in the Airflow Graph
+[/Users/marinaganopolsky/Documents/code/airflow_dag_test/images/airflow_dag_graph.png]
+
+The failed slack notifications can be seen here:
+[/Users/marinaganopolsky/Documents/code/airflow_dag_test/images/slack.png]
