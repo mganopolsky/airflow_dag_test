@@ -60,5 +60,9 @@ cp -n .env_template .env
 
 #start the airflow webserver
 airflow webserver --port 8080
+
+# in a separate terminal window, start the airflow scheduler
+airflow scheduler
+
 ```
 

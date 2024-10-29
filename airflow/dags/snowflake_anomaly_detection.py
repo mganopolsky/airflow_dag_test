@@ -7,6 +7,9 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from dotenv import load_dotenv
 import requests
+from atlassian import Jira
+from requests import HTTPError
+from requests.auth import HTTPBasicAuth
 import json
 import os
 from airflow.models import Variable
@@ -49,44 +52,44 @@ except Exception as e:
 else:
     is_dag_enabled = True
 
-def create_jira_task(error_summary:str, issue_type: str='task'):
+def create_jira_task(error_summary:str):
     
-    # Jira API endpoint for creating an issue    
-    url = f"{jira_url}/rest/api/3/issue"
+    # Jira API endpoint for creating an issue        
+    logging.debug(f'[JIRA]: Creating task {error_summary} at URL {jira_url}')
 
-    # Payload with issue details
-    payload = {
-        "fields": {
-            "project": {
-                "key": project_key  # Your project key in Jira, e.g., "PROJ"
-            },
-            "summary": error_summary,
-            "description": error_summary,
-            "issuetype": {
-                "name": issue_type  # Issue type, like "Task" or "Bug"
-            }
-        }
-    }
-
-    # Headers for the request
+    auth = HTTPBasicAuth(jira_user, jira_token)
     headers = {
+        "Accept": "application/json",
         "Content-Type": "application/json"
     }
 
-    # Make the POST request to create the Jira issue
-    response = requests.post(
-        url,
-        headers=headers,
-        auth=HTTPBasicAuth(jira_user, jira_token),
-        data=json.dumps(payload)
-    )
+    payload = {
+        'fields':{
+            'project': {
+                'key': jira_project_key
+            },
+            'summary': error_summary,
+            'description': error_summary,
+            'issuetype': {
+                "name": "Issue"
+            }      
+        }
+    }
 
-    # Check the response status
-    if response.status_code == 201:
-        print("Task created successfully in Jira.")
-        print("Jira Task URL:", response.json().get("self"))
-    else:
-        print(f"Failed to create Jira task. Status code: {response.status_code}, Response: {response.text}")
+    try:
+        response = requests.request(
+            "POST",
+            jira_url,
+            data=payload,
+            headers=headers,
+            auth=auth
+        )
+
+    except HTTPError as e:
+        logging.debug(e.response.text)
+        print(f"Failed to create Jira task. Status code: {e.response.status_code}, Response: {e.response.text}")
+    finally:
+        print(f'Jira issue created successfully: ')
 
 # Function to log success
 def log_success_message():
@@ -293,5 +296,11 @@ with DAG(
         test_duplicate_rows_task
     ] >> check_results_task
 
+    external_notifications = [
+        send_failure_message_task, 
+        create_jira_item_task
+    ]
+
     # Branching logic for success/failure
-    check_results_task >> [log_success_task, send_failure_message_task, create_jira_item_task]
+    check_results_task >> [log_success_task, *external_notifications]
+    
