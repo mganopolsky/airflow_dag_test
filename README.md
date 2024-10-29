@@ -2,19 +2,20 @@
 
 This project sets up a flow with Apache airflow in Python. Airflow set up on a local server was used to create the environment variables needed to run the tests. If any anomalies are found, a message is sent to a Slack Webhook URL with the details.
 
+The main code of the project is saved in the `airflow/dags/snowflake_anomaly_detection.py` file
+
 ## Assumptions
 
-1. `snowflake_table_name` and `snowflake_last_update_column` will be passed in as parameters , brought in from Airflow variables. These, and the variables below, as shown in the image above, should be set up in advance.
+1. `snowflake_table_name` and `snowflake_last_update_column` will be passed in as parameters, brought in from Airflow variables. These, and the variables below, as shown in the image below, should be set up in advance.
 2. The Snowflake connection is set up in the Airflow UI, under the `Admin/Connections` tab. Whatever the connection name is, in my case, `snowflake_connection_id`, should be saved in the `.env` file under the key `snowflake_connection_id`
-3. snowflake credentials will be brought in from the local `.env` file
-4. `snowflake table` and `column name` existance will not be tested - instead, error handling in the code will throw an exception if the query does not execute properly.
-5. Slack notifications will be sent through a webhook; the webhook URL is stored as an **Airflow Variable** with the key `slack_webhook_url`
-6. The DAG will be run daily (on the assumptions that the information is not needed real time, and that 1 day will be enough to follow up on detected anomalies)
-7. The instructions below will decsribe how to install & run an `Airflow` server locally where a UI can be viewed of the DAG(s) set up for this system
-8. The `login/pwd` for the local version of the servier are `admin/admin'
-9. Anomaly tests - a list of all anomaly tests is shown in its own section
-10. There will not be any alerts if all tests pass successfully. ** We will only alert on failure to reduce noise **
-11. Project env variables should be stored in a `.env` file in the root folder; a template file is included with `.env_template`
+3. `snowflake table` and `column name` existance will not be tested - instead, error handling in the code will throw an exception if the query does not execute properly.
+4. Slack notifications will be sent through a webhook; the webhook URL is stored as an **Airflow Variable** with the key `slack_webhook_url`
+5. The DAG will be run daily (on the assumptions that the information is not needed real time, and that 1 day will be enough to follow up on detected anomalies)
+6. The instructions below will describe how to install & run an `Airflow` server locally where a UI can be viewed of the DAG(s) set up for this system
+7. The `login/pwd` for the local version of the server are `admin/admin'
+8. Anomaly tests - a list of all anomaly tests is shown in its own section
+9. There will not be any alerts if all tests pass successfully. ** We will only alert/create tasks on failure to reduce noise **
+10. Project env variables should be stored in a `.env` file in the root folder; a template file is included with `.env_template`
   
 ## Data Quality Checks
 This project includes the following data quality checks:
